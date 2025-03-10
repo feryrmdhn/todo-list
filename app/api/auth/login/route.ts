@@ -5,11 +5,11 @@ import jwt from 'jsonwebtoken';
 
 export async function POST(request: Request) {
     try {
-        const { username, password } = await request.json();
+        const { email, password } = await request.json();
 
         // Find user
         const user = await prisma.user.findUnique({
-            where: { username }
+            where: { email }
         });
 
         if (!user) {
@@ -49,10 +49,11 @@ export async function POST(request: Request) {
         const response = NextResponse.json(
             {
                 message: 'Login successful',
+                token: token,
                 user: {
                     id: user.id,
-                    username: user.username,
                     email: user.email,
+                    username: user.username,
                     role: user.role
                 }
             },
