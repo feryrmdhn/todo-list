@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int        @id @default(autoincrement())
+  username      String     @unique
+  email         String     @unique
+  password      String
+  role          Role
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  tasksCreated  Task[]     @relation("CreatedTasks")
+  tasksAssigned Task[]     @relation("AssignedTasks")
+  auditLogs     AuditLog[] @relation("UserAuditLogs")
+}
+
+model Task {
+  id           Int        @id @default(autoincrement())
+  title        String
+  description  String?
+  status       Status
+  createdBy    User       @relation("CreatedTasks", fields: [createdById], references: [id])
+  createdById  Int
+  assignedTo   User?      @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  assignedToId Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[] @relation("TaskAuditLogs")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  tableName   String
+  recordId    Int
+  action      Action
+  oldData     Json?
+  newData     Json?
+  changedBy   User?    @relation("UserAuditLogs", fields: [changedById], references: [id])
+  changedById Int?
+  task        Task?    @relation("TaskAuditLogs", fields: [taskId], references: [id])
+  taskId      Int?
+  changedAt   DateTime @default(now())
+}
+
+enum Role {
+  lead
+  team
+}
+
+enum Status {
+  not_started
+  on_progress
+  done
+  reject
+}
+
+enum Action {
+  insert
+  update
+  delete
+}
