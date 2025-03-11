@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 
@@ -48,7 +48,7 @@ export async function GET(_: Request, { params }: { params: Params }) {
         }
 
         // Check permission - only creator (lead) or assignee (team) can view
-        if (task.created_by !== user.id && task.assigned_to !== user.id) {
+        if (task.createdById !== user.id && task.assignedToId !== user.id) {
             return NextResponse.json(
                 { error: 'You do not have permission to view this task' },
                 { status: 403 }
@@ -69,104 +69,99 @@ export async function GET(_: Request, { params }: { params: Params }) {
 export async function PUT(request: Request, { params }: { params: Params }) {
     try {
         const user = await getAuthUser();
+
         if (!user) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const taskId = parseInt(params.id);
-        const task = await prisma.task.findUnique({
-            where: { id: taskId }
-        });
+        const task = await prisma.task.findUnique({ where: { id: taskId } });
 
         if (!task) {
-            return NextResponse.json(
-                { error: 'Task not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Task not found" }, { status: 404 });
         }
 
         const updateData = await request.json();
 
-        // Check permissions based on role
-        if (user.role === 'lead') {
-            // Leads can update all task fields if they created the task
-            if (task.created_by !== user.id) {
+        if (user.role === "lead") {
+            if (task.createdById !== user.id) {
                 return NextResponse.json(
-                    { error: 'You do not have permission to update this task' },
+                    { error: "You do not have permission to update this task" },
                     { status: 403 }
                 );
             }
 
-            // Validate assigned_to if provided
             if (updateData.assigned_to) {
                 const assignedUser = await prisma.user.findUnique({
-                    where: { id: updateData.assigned_to }
+                    where: { id: updateData.assigned_to },
                 });
 
                 if (!assignedUser) {
-                    return NextResponse.json(
-                        { error: 'Assigned user not found' },
-                        { status: 404 }
-                    );
+                    return NextResponse.json({ error: "Assigned user not found" }, { status: 404 });
                 }
 
-                if (assignedUser.role !== 'team') {
+                if (assignedUser.role !== "team") {
                     return NextResponse.json(
-                        { error: 'Tasks can only be assigned to team members' },
+                        { error: "Tasks can only be assigned to team members" },
                         { status: 400 }
                     );
                 }
             }
-        } else if (user.role === 'team') {
-            // Team members can only update status and description if assigned to them
-            if (task.assigned_to !== user.id) {
+        } else if (user.role === "team") {
+            if (task.assignedToId !== user.id) {
                 return NextResponse.json(
-                    { error: 'You do not have permission to update this task' },
+                    { error: "You do not have permission to update this task" },
                     { status: 403 }
                 );
             }
 
-            // Team members can only update status and description
-            const allowedFields = ['status', 'description'];
+            const allowedFields = ["status", "description"];
             const providedFields = Object.keys(updateData);
+            const invalidFields = providedFields.filter((field) => !allowedFields.includes(field));
 
-            const invalidFields = providedFields.filter(field => !allowedFields.includes(field));
             if (invalidFields.length > 0) {
                 return NextResponse.json(
-                    { error: `Team members can only update: ${allowedFields.join(', ')}` },
+                    { error: `Team members can only update: ${allowedFields.join(", ")}` },
                     { status: 400 }
                 );
             }
         }
 
-        // Update the task
         const updatedTask = await prisma.task.update({
             where: { id: taskId },
             data: {
                 ...updateData,
-                updated_at: new Date()
-            }
+                updatedAt: new Date(),
+            },
         });
 
         return NextResponse.json({
-            message: 'Task updated successfully',
-            task: updatedTask
+            message: "Task updated successfully",
+            task: updatedTask,
         });
     } catch (error) {
-        console.error('Error updating task:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
         return NextResponse.json(
-            { error: 'Internal server error' },
+            {
+                error: 'Internal server error',
+                details: errorMessage
+            },
             { status: 500 }
         );
     }
 }
 
 // Delete a task (lead only)
-export async function DELETE(request: Request, { params }: { params: Params }) {
+export async function DELETE(_request: NextRequest, context: { params: Params }) {
     try {
+        if (!context.params || !context.params?.id) {
+            return NextResponse.json(
+                { error: 'Missing task ID parameter' },
+                { status: 400 }
+            );
+        }
+
         const user = await getAuthUser();
         if (!user) {
             return NextResponse.json(
@@ -183,38 +178,55 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
             );
         }
 
-        const taskId = parseInt(params.id);
-        const task = await prisma.task.findUnique({
-            where: { id: taskId }
-        });
-
-        if (!task) {
+        // Safely parse the task ID
+        const taskId = parseInt(context.params?.id, 10);
+        if (isNaN(taskId)) {
             return NextResponse.json(
-                { error: 'Task not found' },
-                { status: 404 }
+                { error: 'Invalid task ID format' },
+                { status: 400 }
             );
         }
 
-        // Check if the lead created this task
-        if (task.created_by !== user.id) {
-            return NextResponse.json(
-                { error: 'You do not have permission to delete this task' },
-                { status: 403 }
-            );
+        // Delete with permission check
+        try {
+            const task = await prisma.task.findUnique({
+                where: { id: taskId }
+            });
+
+            if (!task) {
+                return NextResponse.json(
+                    { error: 'Task not found' },
+                    { status: 404 }
+                );
+            }
+
+            if (task.createdById !== user.id) {
+                return NextResponse.json(
+                    { error: 'You do not have permission to delete this task' },
+                    { status: 403 }
+                );
+            }
+
+            await prisma.task.delete({
+                where: { id: taskId }
+            });
+
+            return NextResponse.json({
+                message: 'Task deleted successfully',
+                deletedTaskId: taskId
+            });
+        } catch (dbError) {
+            console.error("Database operation failed:", dbError);
+            throw dbError;
         }
-
-        // Delete the task
-        await prisma.task.delete({
-            where: { id: taskId }
-        });
-
-        return NextResponse.json({
-            message: 'Task deleted successfully'
-        });
     } catch (error) {
-        console.error('Error deleting task:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
         return NextResponse.json(
-            { error: 'Internal server error' },
+            {
+                error: 'Internal server error',
+                details: errorMessage
+            },
             { status: 500 }
         );
     }

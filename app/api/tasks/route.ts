@@ -17,7 +17,7 @@ export async function GET() {
         let tasks;
         if (user.role === 'lead') {
             tasks = await prisma.task.findMany({
-                where: { created_by: user.id },
+                where: { createdById: user.id },
                 include: {
                     assignedTo: {
                         select: {
@@ -28,11 +28,11 @@ export async function GET() {
                         }
                     }
                 },
-                orderBy: { created_at: 'desc' }
+                orderBy: { createdAt: 'desc' }
             });
         } else {
             tasks = await prisma.task.findMany({
-                where: { assigned_to: user.id },
+                where: { assignedToId: user.id },
                 include: {
                     createdBy: {
                         select: {
@@ -43,7 +43,7 @@ export async function GET() {
                         }
                     }
                 },
-                orderBy: { created_at: 'desc' }
+                orderBy: { createdAt: 'desc' }
             });
         }
 
@@ -114,8 +114,8 @@ export async function POST(request: Request) {
                 title,
                 description,
                 status: 'not_started',
-                created_by: user.id,
-                assigned_to: assigned_to || null
+                createdById: user.id,
+                assignedToId: assigned_to || null
             }
         });
 
