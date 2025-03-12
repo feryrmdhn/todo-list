@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 
-type Params = {
+interface Params {
     id: string;
 }
 
 // Get a specific task
-export async function GET(_request: NextRequest, context: { params: Params }) {
+export async function GET(_request: NextRequest, { params }: { params: Params }) {
     try {
-        const { params } = context
         const user = await getAuthUser()
 
         if (!user) {
