@@ -31,7 +31,7 @@ const useAuth = () => {
             )
 
             localStorage.setItem('userData', JSON.stringify(res.data.user))
-            router.push("/dashboard")
+            router.replace("/dashboard")
         }
         catch (err) {
             if (axios.isAxiosError(err)) {

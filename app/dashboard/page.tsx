@@ -24,7 +24,7 @@ export default function Dashboard() {
     return (
         <>
             <div className="mt-3 mx-auto max-w-2xl flex justify-between px-3 sm:px-0">
-                <p className="leading-10">{formattedDate}</p>
+                <p className="leading-10 text-black">{formattedDate}</p>
                 <button
                     onClick={handleLogout}
                     className="py-2 px-3 text-white bg-red-500 hover:bg-red-600 rounded cursor-pointer"

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">Todo List</h1>
@@ -20,7 +20,7 @@ export default function Home() {
           Organize Your Tasks Easily
         </h2>
         <p className="text-gray-600 text-lg mb-6">
-          Manage your daily activities with our simple and effective Todo List app.
+          Manage your daily activities with our simple and effective Todo List app
         </p>
         <Link
           href="/register"
