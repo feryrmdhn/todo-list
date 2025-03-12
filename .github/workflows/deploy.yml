@@ -25,9 +25,6 @@ jobs:
       - name: Install dependencies
         run: yarn
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
       - name: Build Next.js project
         run: yarn build
 
