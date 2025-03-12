@@ -5,18 +5,18 @@ import jwt from 'jsonwebtoken';
 
 export async function POST(request: Request) {
     try {
-        const { email, password } = await request.json();
+        const { email, password } = await request.json()
 
         // Find user
         const user = await prisma.user.findUnique({
             where: { email }
-        });
+        })
 
         if (!user) {
             return NextResponse.json(
                 { error: 'Invalid credentials' },
                 { status: 401 }
-            );
+            )
         }
 
         // Verify password
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 { error: 'Invalid credentials' },
                 { status: 401 }
-            );
+            )
         }
 
         // Ensure JWT_SECRET is defined
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
             },
             JWT_SECRET,
             { expiresIn: '1d' }
-        );
+        )
 
         // Set cookie with JWT
         const response = NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
                 }
             },
             { status: 200 }
-        );
+        )
 
         response.cookies.set({
             name: 'auth_token',
@@ -66,15 +66,16 @@ export async function POST(request: Request) {
             httpOnly: true,
             path: '/',
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 // 1 day
-        });
+            maxAge: 60 * 60 * 24
+        })
 
-        return response;
+        return response
+
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Login error:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
-        );
+        )
     }
 }

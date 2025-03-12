@@ -9,34 +9,34 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { error: "Unauthorized" },
                 { status: 401 }
-            );
+            )
         }
 
         if (user.role !== "lead") {
             return NextResponse.json(
                 { error: "Forbidden: Only leads can assign tasks" },
                 { status: 403 }
-            );
+            )
         }
 
-        const { taskId, assignedToId } = await request.json();
+        const { taskId, assignedToId } = await request.json()
 
         if (!taskId || !assignedToId) {
             return NextResponse.json(
                 { error: "Missing taskId or assignedToId" },
                 { status: 400 }
-            );
+            )
         }
 
         const task = await prisma.task.findUnique({
             where: { id: taskId }
-        });
+        })
 
         if (!task) {
             return NextResponse.json(
                 { error: "Task not found" },
                 { status: 404 }
-            );
+            )
         }
 
         if (task.createdById !== user.id) {
@@ -49,31 +49,31 @@ export async function POST(request: NextRequest) {
         // Ensure assignedToId is user with role 'team'
         const assignedUser = await prisma.user.findUnique({
             where: { id: assignedToId }
-        });
+        })
 
         if (!assignedUser || assignedUser.role !== "team") {
             return NextResponse.json(
                 { error: "Invalid assigned user" },
                 { status: 400 }
-            );
+            )
         }
 
         // Update task with assigned user
         await prisma.task.update({
             where: { id: taskId },
             data: { assignedToId }
-        });
+        })
 
         return NextResponse.json({
             message: "Task assigned successfully",
             taskId,
             assignedToId
-        });
+        })
     } catch (error) {
         console.error("Error assigning task:", error);
         return NextResponse.json(
             { error: "Internal server error" },
             { status: 500 }
-        );
+        )
     }
 }

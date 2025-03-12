@@ -9,6 +9,12 @@ export type Task = {
     assignedToId?: { id: number };
 }
 
+export type User = {
+    id: string;
+    email: string;
+    role: string;
+}
+
 export type TeamMember = {
     id: string | number;
     username: string;

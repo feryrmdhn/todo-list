@@ -1,10 +1,13 @@
 'use client'
 
+import useAuth from "@/app/hooks/useAuth";
 import { Task, TeamMember } from "@/types";
 import { STATUS_OPTIONS } from "@/utils";
-import { useEffect, useState } from "react";
+import axios from "axios";
+import { FC, useEffect, useState } from "react";
 
-export default function TodoList() {
+const BodyTodo: FC = () => {
+    const { user } = useAuth()
     const [tasks, setTasks] = useState<Array<Task>>([])
     const [newTask, setNewTask] = useState<string>("")
     const [members, setMembers] = useState<Array<TeamMember>>([])
@@ -12,23 +15,18 @@ export default function TodoList() {
     const [errorMessage, setErrorMessage] = useState<string>("")
     const [reFetch, setReFetch] = useState<boolean>(false)
     const [isLoadingFetch, setIsLoadingFetch] = useState<boolean>(false)
+    const [isLoadingGetUser, setIsLoadingGetUser] = useState<boolean>(false)
     const [isEdit, setIsEdit] = useState<boolean>(false)
 
     const fetchTasks = async () => {
         setIsLoadingFetch(true)
         try {
-            const res = await fetch("/api/tasks")
-            const data = await res.json()
-
-            if (!res.ok) {
-                throw new Error(data.error)
-            }
-
-            setTasks(data);
+            const { data } = await axios.get("/api/tasks")
+            setTasks(data)
         }
         catch (err) {
-            if (err instanceof Error) {
-                setErrorMessage(err.message);
+            if (axios.isAxiosError(err)) {
+                setErrorMessage(err.response?.data?.error)
             }
         }
         finally {
@@ -38,19 +36,100 @@ export default function TodoList() {
     }
 
     const fetchUserTeam = async () => {
+        setIsLoadingGetUser(true)
         try {
-            const res = await fetch("/api/users")
-            const data = await res.json()
-
-            if (!res.ok) {
-                throw new Error(data.error)
-            }
-
-            setMembers(data);
+            const { data } = await axios.get("/api/users")
+            setMembers(data)
         }
         catch (err) {
-            if (err instanceof Error) {
-                setErrorMessage(err.message);
+            if (axios.isAxiosError(err)) {
+                setErrorMessage(err.response?.data?.error)
+                setMembers([])
+            }
+        }
+        finally {
+            setIsLoadingGetUser(false)
+        }
+    }
+
+    const addTask = async () => {
+        if (!newTask) return;
+        try {
+            await axios.post("/api/tasks",
+                { title: newTask },
+                { headers: { "Content-Type": "application/json" } }
+            )
+
+            setReFetch(true)
+            setErrorMessage("")
+        }
+        catch (err) {
+            if (axios.isAxiosError(err)) {
+                setErrorMessage(err.response?.data?.error)
+            }
+        }
+        finally {
+            setNewTask("")
+        }
+    }
+
+    const assignTask = async (taskId: number | string, assignedToId: number | string) => {
+        try {
+            await axios.post("/api/tasks/assign",
+                { taskId, assignedToId },
+                { headers: { "Content-Type": "application/json" } }
+            )
+
+            setErrorMessage("")
+
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setErrorMessage(err.response?.data?.error)
+            }
+        }
+    }
+
+    const updateTask = async () => {
+        if (!editingTask) return;
+        try {
+            const res = await axios.put(`/api/tasks/${editingTask.id}`,
+                { title: editingTask.title },
+                { headers: { "Content-Type": "application/json" } }
+            )
+
+            if (res.status === 200) {
+                setTasks(tasks.map((t) => (t.id === editingTask.id ? editingTask : t)))
+            }
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setErrorMessage(err.response?.data?.error)
+            }
+        } finally {
+            setEditingTask(null)
+        }
+    }
+
+    const deleteTask = async (id: number) => {
+        try {
+            await axios.delete(`/api/tasks/${id}`)
+            setReFetch(true)
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setErrorMessage(err.response?.data?.error)
+            }
+        }
+    }
+
+    const updateStatus = async (id: string, status: Task["status"]) => {
+        try {
+            await axios.patch(`/api/tasks/${id}/status`,
+                { status },
+                { headers: { "Content-Type": "application/json" } }
+            )
+            setReFetch(true)
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setErrorMessage(err.response?.data?.error)
             }
         }
     }
@@ -63,94 +142,6 @@ export default function TodoList() {
         if (!isEdit) fetchTasks()
     }, [isEdit])
 
-    // Add Task
-    const addTask = async () => {
-        if (!newTask) return;
-        try {
-            const res = await fetch("/api/tasks", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: newTask }),
-            });
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error)
-            };
-
-            setNewTask("");
-            setReFetch(true)
-            setErrorMessage("")
-        } catch (err) {
-            if (err instanceof Error) {
-                setErrorMessage(err.message);
-            }
-        }
-    };
-
-    // Assign Task
-    const assignTask = async (taskId: number | string, assignedToId: number | string) => {
-        try {
-            const res = await fetch("/api/tasks/assign", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ taskId, assignedToId }),
-            });
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error)
-            };
-
-            setErrorMessage("")
-
-        } catch (err) {
-            if (err instanceof Error) {
-                setErrorMessage(err.message);
-            }
-        }
-    };
-
-    // Update Task (Lead only)
-    const updateTask = async () => {
-        if (!editingTask) return;
-        const res = await fetch(`/api/tasks/${editingTask.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: editingTask.title }),
-        });
-        if (res.ok) {
-            setTasks(tasks.map((t) => (t.id === editingTask.id ? editingTask : t)));
-            setEditingTask(null);
-        }
-    };
-
-    // Delete Task (Lead only)
-    const deleteTask = async (id: number) => {
-        try {
-            const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" })
-            if (res.ok) setReFetch(true);
-        } catch (err) {
-            console.error("Delete error:", err);
-        }
-    };
-
-    // Update Status (Team only)
-    const updateStatus = async (id: string, status: Task["status"]) => {
-        try {
-            const res = await fetch(`/api/tasks/${id}/status`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status })
-            });
-            if (res.ok) setReFetch(true)
-        } catch (err) {
-            if (err instanceof Error) {
-                setErrorMessage(err.message);
-            }
-        }
-    };
-
     const editTask = (task: Task) => {
         fetchUserTeam()
         setEditingTask(task)
@@ -158,7 +149,30 @@ export default function TodoList() {
 
     return (
         <div className="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-            <h1 className="text-2xl font-bold text-gray-500 mb-4">Todo List</h1>
+            <div className="flex justify-between mb-1">
+                <h1 className="text-2xl font-bold text-gray-500 mb-4">Todo List</h1>
+                {user?.role === 'lead' &&
+                    <button className="flex items-center py-1 px-2 text-blue-500 cursor-pointer rounded">
+                        Go to Log &nbsp;
+                        <span>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-4 h-4 text-blue-500"
+                            >
+                                <path d="M14 3h7v7" />
+                                <path d="M10 14 21 3" />
+                                <path d="M21 14v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            </svg>
+                        </span>
+                    </button>
+                }
+            </div>
 
             <div className="flex gap-2 mb-4">
                 <input
@@ -175,7 +189,7 @@ export default function TodoList() {
                     Add
                 </button>
             </div>
-            {errorMessage && <p className="text-red-500 text-base">{errorMessage}</p>}
+            {errorMessage && <p className="text-red-500 text-base mb-1">{errorMessage}</p>}
 
             {isLoadingFetch ?
                 <p className="text-base text-center text-gray-400">Loading...</p>
@@ -234,50 +248,55 @@ export default function TodoList() {
             {isEdit && editingTask && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30">
                     <div className="bg-white p-6 rounded shadow-lg w-xl">
-                        <h2 className="text-xl font-bold text-gray-400">Edit Task</h2>
+                        <h2 className="text-xl font-bold text-gray-400 mb-4">Edit Task</h2>
+                        <label className="text-sm text-gray-500">Task Title</label>
                         <input
                             type="text"
                             value={editingTask.title}
-                            onChange={(e) =>
-                                setEditingTask({ ...editingTask, title: e.target.value })
-                            }
-                            className="border text-gray-400 p-2 w-full my-2 rounded focus:outline-none"
+                            onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                            className="border text-gray-400 p-2 w-full mb-2 rounded focus:outline-none"
                         />
 
-                        {members.length === 0 ?
-                            <p className="text-gray-400">Empty user</p>
+                        {isLoadingGetUser ?
+                            <p className="text-gray-400">Loading...</p>
                             :
-                            <select
-                                className="border rounded px-1 py-3 focus:outline-none text-gray-400 w-full"
-                                value={editingTask.assignedToId?.toString() || ""}
-                                onChange={async (e) => {
-                                    const newAssignedToId = Number(e.target.value);
-                                    const selectedMember = members.find(m => m.id === newAssignedToId);
+                            (members.length === 0 ?
+                                <p className="text-gray-400">Empty user</p>
+                                :
+                                <>
+                                    <label className="text-sm text-gray-500">Member</label>
+                                    <select
+                                        className="border rounded px-1 py-3 focus:outline-none text-gray-400 w-full"
+                                        value={editingTask.assignedToId?.toString() || ""}
+                                        onChange={async (e) => {
+                                            const newAssignedToId = Number(e.target.value);
+                                            const selectedMember = members.find(m => m.id === newAssignedToId);
 
-                                    setEditingTask((prev) => {
-                                        if (!prev) return null;
-                                        return {
-                                            ...prev,
-                                            assignedToId: newAssignedToId,
-                                            assignedTo: selectedMember ? {
-                                                id: selectedMember.id,
-                                                username: selectedMember.username
-                                            } : {}
-                                        };
-                                    });
+                                            setEditingTask((prev) => {
+                                                if (!prev) return null;
+                                                return {
+                                                    ...prev,
+                                                    assignedToId: newAssignedToId,
+                                                    assignedTo: selectedMember ? {
+                                                        id: selectedMember.id,
+                                                        username: selectedMember.username
+                                                    } : {}
+                                                };
+                                            });
 
-                                    // Send the API call
-                                    if (editingTask?.id) {
-                                        await assignTask(editingTask.id, newAssignedToId);
-                                    }
-                                }}
-                            >
-                                {members.map((data) => (
-                                    <option key={data.id} value={data.id}>
-                                        {data.username}
-                                    </option>
-                                ))}
-                            </select>
+                                            if (editingTask?.id) {
+                                                await assignTask(editingTask.id, newAssignedToId);
+                                            }
+                                        }}
+                                    >
+                                        {members.map((data) => (
+                                            <option key={data.id} value={data.id}>
+                                                {data.username}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </>
+                            )
                         }
 
                         <div className="mt-4 flex gap-x-2">
@@ -300,4 +319,6 @@ export default function TodoList() {
         </div>
     )
 }
+
+export default BodyTodo;
 

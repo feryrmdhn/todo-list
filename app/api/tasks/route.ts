@@ -1,4 +1,3 @@
-// src/app/api/tasks/route.js
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
@@ -6,12 +5,13 @@ import { getAuthUser } from '@/lib/auth';
 // Get all tasks (filtered by role)
 export async function GET() {
     try {
-        const user = await getAuthUser();
+        const user = await getAuthUser()
+
         if (!user) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
-            );
+            )
         }
 
         let tasks;
@@ -29,7 +29,7 @@ export async function GET() {
                     }
                 },
                 orderBy: { createdAt: 'desc' }
-            });
+            })
         } else {
             tasks = await prisma.task.findMany({
                 where: { assignedToId: user.id },
@@ -44,39 +44,38 @@ export async function GET() {
                     }
                 },
                 orderBy: { createdAt: 'desc' }
-            });
+            })
         }
 
-        return NextResponse.json(tasks);
+        return NextResponse.json(tasks)
     } catch (error) {
-        console.error('Error fetching tasks:', error);
+        console.error('Error fetching tasks:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
-        );
+        )
     }
 }
 
-// Create a new task (lead only)
 export async function POST(request: Request) {
     try {
-        const user = await getAuthUser();
+        const user = await getAuthUser()
+
         if (!user) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
-            );
+            )
         }
 
-        // Only leads can create tasks
         if (user.role !== 'lead') {
             return NextResponse.json(
                 { error: 'Only leads can create tasks' },
                 { status: 403 }
-            );
+            )
         }
 
-        const { title, description, assigned_to } = await request.json();
+        const { title, description, assigned_to } = await request.json()
 
         // Validate required fields
         if (!title) {
@@ -91,20 +90,20 @@ export async function POST(request: Request) {
         if (assigned_to) {
             assignedUser = await prisma.user.findUnique({
                 where: { id: assigned_to }
-            });
+            })
 
             if (!assignedUser) {
                 return NextResponse.json(
                     { error: 'Assigned user not found' },
                     { status: 404 }
-                );
+                )
             }
 
             if (assignedUser.role !== 'team') {
                 return NextResponse.json(
                     { error: 'Tasks can only be assigned to team members' },
                     { status: 400 }
-                );
+                )
             }
         }
 
@@ -117,7 +116,19 @@ export async function POST(request: Request) {
                 createdById: user.id,
                 assignedToId: assigned_to || null
             }
-        });
+        })
+
+        // Add to Log
+        await prisma.auditLog.create({
+            data: {
+                tableName: "Task",
+                recordId: newTask.id,
+                action: "insert",
+                newData: newTask,
+                changedById: user.id,
+                changedAt: new Date(),
+            },
+        })
 
         return NextResponse.json(
             {
@@ -125,12 +136,13 @@ export async function POST(request: Request) {
                 task: newTask
             },
             { status: 201 }
-        );
+        )
     } catch (error) {
-        console.error('Error creating task:', error);
+        console.error('Error creating task:', error)
+
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
-        );
+        )
     }
 }

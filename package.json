@@ -12,6 +12,7 @@
     "@prisma/client": "^6.4.1",
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.9",
+    "axios": "^1.8.2",
     "bcrypt": "^5.1.1",
     "jose": "^6.0.8",
     "jsonwebtoken": "^9.0.2",

@@ -1,44 +1,40 @@
-"use client";
+"use client"
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 export default function RegisterPage() {
-    const router = useRouter();
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [role, setRole] = useState("team");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const router = useRouter()
+    const [username, setUsername] = useState<string>("")
+    const [email, setEmail] = useState<string>("")
+    const [password, setPassword] = useState<string>("")
+    const [role, setRole] = useState<string>("team")
+    const [loading, setLoading] = useState<boolean>(false)
+    const [error, setError] = useState<string>("")
 
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
+        e.preventDefault()
+        setError("")
+        setLoading(true)
 
         try {
-            const res = await fetch("/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, email, password, role }),
-            });
+            await axios.post("/api/auth/register", {
+                username,
+                email,
+                password,
+                role
+            })
 
-            const data = await res.json();
-            if (!res.ok) {
-                setError(data.error || "Failed to register");
-                setLoading(false);
-                return;
-            }
-
-            router.push("/login");
+            router.push("/login")
         } catch (err) {
-            if (err instanceof Error) {
-                setError(err.message);
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.error)
             }
-            setLoading(false);
+        } finally {
+            setLoading(false)
         }
-    };
+    }
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-100">

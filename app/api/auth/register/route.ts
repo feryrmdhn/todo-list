@@ -4,14 +4,14 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
     try {
-        const { username, email, password, role } = await request.json();
+        const { username, email, password, role } = await request.json()
 
         // Validate role
         if (role !== 'lead' && role !== 'team') {
             return NextResponse.json(
                 { error: 'Invalid role. Must be either "lead" or "team"' },
                 { status: 400 }
-            );
+            )
         }
 
         // Check if user already exists
@@ -22,17 +22,17 @@ export async function POST(request: Request) {
                     { email }
                 ]
             }
-        });
+        })
 
         if (existingUser) {
             return NextResponse.json(
                 { error: 'Username or email already exists' },
                 { status: 400 }
-            );
+            )
         }
 
         // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10)
 
         // Create user
         const newUser = await prisma.user.create({
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
                 password: hashedPassword,
                 role
             }
-        });
+        })
 
         return NextResponse.json(
             {
@@ -55,12 +55,12 @@ export async function POST(request: Request) {
                 }
             },
             { status: 201 }
-        );
+        )
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('Registration error:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
-        );
+        )
     }
 }
