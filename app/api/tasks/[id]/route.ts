@@ -65,16 +65,16 @@ export async function GET(
     }
 }
 
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { params } = context
+        const id = (await params).id
         const user = await getAuthUser()
 
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const taskId = parseInt(params.id);
+        const taskId = parseInt(id);
         const task = await prisma.task.findUnique({ where: { id: taskId } })
 
         if (!task) {
@@ -152,15 +152,16 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
     }
 }
 
-export async function DELETE(_request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        if (!context.params || !context.params?.id) {
+        if (!params) {
             return NextResponse.json(
                 { error: 'Missing task ID parameter' },
                 { status: 400 }
             )
         }
 
+        const id = (await params).id
         const user = await getAuthUser()
 
         if (!user) {
@@ -177,7 +178,7 @@ export async function DELETE(_request: NextRequest, context: { params: { id: str
             )
         }
 
-        const taskId = parseInt(context.params?.id, 10);
+        const taskId = parseInt(id, 10)
         if (isNaN(taskId)) {
             return NextResponse.json(
                 { error: 'Invalid task ID format' },
