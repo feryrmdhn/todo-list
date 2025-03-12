@@ -7,7 +7,7 @@ type Params = {
 }
 
 // Get a specific task
-export async function GET(_: Request, { params }: { params: Params }) {
+export async function GET(_request: NextRequest, { params }: { params: Params }) {
     try {
         const user = await getAuthUser()
 
@@ -66,7 +66,7 @@ export async function GET(_: Request, { params }: { params: Params }) {
     }
 }
 
-export async function PUT(request: Request, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, { params }: { params: Params }) {
     try {
         const user = await getAuthUser()
 
