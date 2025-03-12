@@ -5,9 +5,9 @@ import { getAuthUser } from '@/lib/auth';
 // Get a specific task
 export async function GET(
     _request: NextRequest,
-    context: { params: { id: string } }) {
+    { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { params } = context
+        const id = (await params).id
         const user = await getAuthUser()
 
         if (!user) {
@@ -17,7 +17,7 @@ export async function GET(
             )
         }
 
-        const taskId = parseInt(params?.id)
+        const taskId = parseInt(id)
         const task = await prisma.task.findUnique({
             where: { id: taskId },
             include: {
