@@ -7,8 +7,9 @@ type Params = {
 }
 
 // Get a specific task
-export async function GET(_request: NextRequest, { params }: { params: Params }) {
+export async function GET(_request: NextRequest, context: { params: Params }) {
     try {
+        const { params } = context
         const user = await getAuthUser()
 
         if (!user) {
@@ -18,7 +19,7 @@ export async function GET(_request: NextRequest, { params }: { params: Params })
             )
         }
 
-        const taskId = parseInt(params.id)
+        const taskId = parseInt(params?.id)
         const task = await prisma.task.findUnique({
             where: { id: taskId },
             include: {
