@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 
-interface Params {
-    id: string;
-}
-
 // Get a specific task
-export async function GET(_request: NextRequest, { params }: { params: Params }) {
+export async function GET(
+    _request: NextRequest,
+    context: { params: { id: string } }) {
     try {
+        const { params } = context
         const user = await getAuthUser()
 
         if (!user) {
@@ -66,8 +65,9 @@ export async function GET(_request: NextRequest, { params }: { params: Params })
     }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
     try {
+        const { params } = context
         const user = await getAuthUser()
 
         if (!user) {
@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
     }
 }
 
-export async function DELETE(_request: NextRequest, context: { params: Params }) {
+export async function DELETE(_request: NextRequest, context: { params: { id: string } }) {
     try {
         if (!context.params || !context.params?.id) {
             return NextResponse.json(
