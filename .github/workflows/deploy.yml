@@ -29,4 +29,4 @@ jobs:
         run: yarn build
 
       - name: Deploy to Vercel
-        run: npx vercel --prod --token ${{ secrets.TOKEN_GITHUB }}
+        run: npx vercel --prod --token ${{ secrets.TOKEN_GITHUB }} --yes
