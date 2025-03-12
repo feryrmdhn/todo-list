@@ -16,5 +16,7 @@ export const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', options).replace(/(\d+)(st|nd|rd|th)/, "$1")
 }
 
+export const options = ["not_started", "on_progress", "done", "reject"]
+
 export const formattedText = (text: string) => text?.replace("_", " ")
 

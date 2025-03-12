@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
+import { options } from "@/utils";
 
-export const options = ["not_started", "on_progress", "done", "reject"];
-
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const id = (await params).id
         const user = await getAuthUser()
 
         if (!user) {
@@ -15,7 +15,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
             )
         }
 
-        const taskId = parseInt(params.id)
+        const taskId = parseInt(id)
         const task = await prisma.task.findUnique({ where: { id: taskId } })
 
         if (!task) {
