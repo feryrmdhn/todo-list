@@ -44,10 +44,10 @@ const LogsLayout: FC<Props> = ({ onClose }) => {
                 ) : (
                     <div className="h-72 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                         {dataLogs.map((item) => (
-                            <div key={item.id} className="p-2 border-b">
+                            <div key={item.id} className="p-2 border-b overflow-x-auto w-xl">
                                 <p className="text-blue-500">{item.changedBy?.username}</p>
                                 <p className="text-gray-500">Task id: {item.newData?.id || item.oldData?.id}</p>
-                                <div className="flex justify-between flex-wrap">
+                                <div className="flex justify-between">
                                     <div className="flex items-center gap-x-2">
                                         {item.oldData && (
                                             <p className="text-red-500">
