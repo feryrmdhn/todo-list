@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
         return NextResponse.json({ message: "Task status updated successfully", task: updatedTask })
     } catch (error) {
-        console.error("🔥 Error updating task status:", error);
+        console.error("Error updating task status:", error)
         return NextResponse.json(
             { error: "Internal server error" },
             { status: 500 }
